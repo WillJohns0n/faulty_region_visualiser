@@ -4,6 +4,9 @@ A visual tool to help optimize bed mesh settings and faulty regions on a **Prusa
 
 This tool provides an intuitive graphical interface to define, visualize, and manage faulty regions on your bed mesh.
 
+<img width="1305" height="791" alt="image" src="https://github.com/user-attachments/assets/940ab946-97c0-4def-acd4-7f56872b770f" />
+
+
 ## Features
 
 - **Visual Mesh Display**: See your bed mesh as a color-mapped heatmap
@@ -20,13 +23,9 @@ Before using this tool, you need to:
 
 ### 1. Create a High-Resolution Bed Mesh
 
-On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh (minimum **50x50 points**):
+On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh (minimum suggested **50x50 points**):
 
-```gcode
-BED_MESH_CALIBRATE METHOD=automatic PROFILE=default
-```
-
-Higher resolution meshes (e.g., 100x100) provide better accuracy for defining faulty regions.
+Higher resolution meshes (e.g., 100x100) provide better accuracy for defining faulty regions but take a long time for the printer to generate.
 
 ### 2. Save Configuration
 
