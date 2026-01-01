@@ -145,7 +145,7 @@ The GUI will open with a file selection panel on the left.
    - Black dots show all probe points in the mesh
 
 3. **Define Faulty Regions**
-   - Click and drag on the mesh to draw rectangular regions that need compensation
+   - Click and drag on the mesh to draw rectangular regions around the areas affected by magnets
    - Regions are outlined in **red dashed lines**
    - Release to finish drawing
 
@@ -183,23 +183,6 @@ The GUI will open with a file selection panel on the left.
 
 Enable "Snap rectangles to mesh grid" to automatically align regions to your mesh points.
 
-## Configuration File Format
-
-### einsy-rambo.cfg
-
-The tool generates configuration in Klipper format:
-
-```ini
-[bed_mesh]
-mesh_min: 0.1, 0.1
-mesh_max: 249.0, 209.0
-probe_count: 50, 50
-
-faulty_region_1_min: 10.0, 20.5
-faulty_region_1_max: 40.0, 50.5
-faulty_region_2_min: 100.0, 100.0
-faulty_region_2_max: 150.0, 120.0
-```
 
 Copy these definitions into your Klipper configuration:
 - For Mainsail/Fluidd web interface: Paste into your `einsy-rambo.cfg` file
