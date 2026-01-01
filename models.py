@@ -39,6 +39,16 @@ class MeshData:
 
 
 @dataclass
+class PlotBounds:
+    """Represents the plot area boundaries."""
+
+    min_x: float
+    max_x: float
+    min_y: float
+    max_y: float
+
+
+@dataclass
 class BedMeshSettings:
     mesh_min: str
     mesh_max: str

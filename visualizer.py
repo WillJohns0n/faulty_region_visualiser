@@ -9,7 +9,7 @@ from matplotlib.patches import Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from config import Config
-from models import MeshData, Region
+from models import MeshData, Region, PlotBounds
 
 
 class MeshVisualizer:
@@ -27,10 +27,20 @@ class MeshVisualizer:
         self,
         mesh: MeshData,
         regions: List[Region],
+        plot_bounds: Optional[PlotBounds] = None,
         probe_overlay: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.ax.clear()
         self.cax.clear()
+
+        # Use plot_bounds if provided, otherwise fall back to mesh bounds
+        if plot_bounds is None:
+            plot_bounds = PlotBounds(
+                min_x=mesh.min_x,
+                max_x=mesh.max_x,
+                min_y=mesh.min_y,
+                max_y=mesh.max_y,
+            )
 
         im = self.ax.imshow(
             mesh.grid,
@@ -56,8 +66,8 @@ class MeshVisualizer:
         for r in regions:
             self.ax.add_patch(r.patch)
 
-        self.ax.set_xlim(mesh.min_x, mesh.max_x)
-        self.ax.set_ylim(mesh.min_y, mesh.max_y)
+        self.ax.set_xlim(plot_bounds.min_x, plot_bounds.max_x)
+        self.ax.set_ylim(plot_bounds.min_y, plot_bounds.max_y)
         self.ax.set_xlabel("X (mm)")
         self.ax.set_ylabel("Y (mm)")
         self.ax.set_title("Bed Mesh with Faulty Regions")

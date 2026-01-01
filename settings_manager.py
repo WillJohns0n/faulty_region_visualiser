@@ -2,6 +2,7 @@
 
 import tkinter as tk
 
+from config import Config
 from models import BedMeshSettings
 
 
@@ -14,6 +15,10 @@ class SettingsManager:
         self.mesh_max_var = tk.StringVar()
         self.probe_count_var = tk.StringVar()
 
+        # Plot area variables (in mm)
+        self.plot_area_x_var = tk.StringVar(value=str(Config.DEFAULT_PLOT_AREA_X))
+        self.plot_area_y_var = tk.StringVar(value=str(Config.DEFAULT_PLOT_AREA_Y))
+
         # UI state variables
         self.show_probe_overlay = tk.BooleanVar(value=False)
         self.snap_var = tk.BooleanVar(value=False)
@@ -23,3 +28,12 @@ class SettingsManager:
         self.mesh_min_var.set(settings.mesh_min)
         self.mesh_max_var.set(settings.mesh_max)
         self.probe_count_var.set(settings.probe_count)
+
+    def get_plot_area(self) -> tuple[float, float]:
+        """Get current plot area dimensions as (x, y) tuple."""
+        try:
+            x = float(self.plot_area_x_var.get())
+            y = float(self.plot_area_y_var.get())
+            return (max(x, 1), max(y, 1))  # Ensure positive values
+        except (ValueError, tk.TclError):
+            return (Config.DEFAULT_PLOT_AREA_X, Config.DEFAULT_PLOT_AREA_Y)

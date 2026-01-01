@@ -6,8 +6,43 @@ from typing import Optional
 
 import numpy as np
 
-from config import logger
-from models import MeshData
+from config import logger, Config
+from models import MeshData, PlotBounds
+
+
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def calculate_plot_bounds(
+    mesh_data: MeshData, plot_area_x: float, plot_area_y: float
+) -> PlotBounds:
+    """
+    Calculate plot bounds based on plot area and mesh data.
+
+    Logic:
+    - Always use min_x = 0, min_y = 0
+    - Use provided plot_area values as the default max bounds
+    - If mesh exceeds plot area, expand to mesh_max + margin
+    """
+    # Minimum is always 0
+    min_x = 0.0
+    min_y = 0.0
+
+    # Calculate maximum bounds
+    # If mesh exceeds plot area, expand to mesh_max + margin
+    max_x = max(plot_area_x, mesh_data.max_x + Config.PLOT_AREA_MARGIN)
+    max_y = max(plot_area_y, mesh_data.max_y + Config.PLOT_AREA_MARGIN)
+
+    logger.info(
+        "Plot bounds: X=[%.2f..%.2f], Y=[%.2f..%.2f]",
+        min_x,
+        max_x,
+        min_y,
+        max_y,
+    )
+
+    return PlotBounds(min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y)
 
 
 def read_text(path: Path) -> str:

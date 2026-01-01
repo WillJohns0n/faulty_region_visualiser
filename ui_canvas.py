@@ -6,6 +6,7 @@ from matplotlib.patches import Rectangle
 
 from models import Region, Point
 from config import Config
+from parser_mesh import calculate_plot_bounds
 
 
 class CanvasController:
@@ -23,6 +24,14 @@ class CanvasController:
         self._current_patch = None
         self._selected_region = None
 
+        # Region dragging state
+        self._dragging_region = False
+        self._dragging_region_obj = None
+        self._drag_region_start = None
+        self._drag_region_original_bounds = (
+            None  # Store original min/max for consistent dragging
+        )
+
     # --- Drawing ---
 
     def redraw(self) -> None:
@@ -32,6 +41,10 @@ class CanvasController:
             self.app.canvas.draw_idle()
             return
 
+        # Calculate plot bounds based on plot area settings
+        plot_area_x, plot_area_y = self.app.settings_manager.get_plot_area()
+        plot_bounds = calculate_plot_bounds(self.app.mesh, plot_area_x, plot_area_y)
+
         overlay = None
         if self.app.settings_manager.show_probe_overlay.get():
             try:
@@ -57,7 +70,9 @@ class CanvasController:
             except Exception:
                 overlay = None
 
-        self.app.visualizer.draw_mesh(self.app.mesh, self.app.regions, overlay)
+        self.app.visualizer.draw_mesh(
+            self.app.mesh, self.app.regions, plot_bounds, overlay
+        )
         self.app.canvas.draw_idle()
 
     def update_probe_overlay(self) -> None:
@@ -65,6 +80,10 @@ class CanvasController:
         if not self.app.mesh:
             return
 
+        # Calculate plot bounds based on plot area settings
+        plot_area_x, plot_area_y = self.app.settings_manager.get_plot_area()
+        plot_bounds = calculate_plot_bounds(self.app.mesh, plot_area_x, plot_area_y)
+
         overlay = None
         if self.app.settings_manager.show_probe_overlay.get():
             try:
@@ -90,8 +109,10 @@ class CanvasController:
             except Exception:
                 overlay = None
 
-        # Redraw mesh with new overlay settings (clears old overlay)
-        self.app.visualizer.draw_mesh(self.app.mesh, self.app.regions, overlay)
+        # Redraw mesh with new overlay settings while maintaining plot bounds
+        self.app.visualizer.draw_mesh(
+            self.app.mesh, self.app.regions, plot_bounds, overlay
+        )
         self.app.canvas.draw_idle()
 
     def _parse_pair(self, text: str) -> tuple[float, float]:
@@ -219,6 +240,25 @@ class CanvasController:
             max_y + tol_y
         )
 
+    def _is_point_in_region_center(self, x: float, y: float, region: Region) -> bool:
+        """Check if point is strictly inside the region (not near edges for resizing)."""
+        if not self.app.mesh:
+            return False
+
+        min_x, min_y = region.min_point.x, region.min_point.y
+        max_x, max_y = region.max_point.x, region.max_point.y
+
+        # Calculate tolerance padding for resize handles
+        x_range = self.app.mesh.max_x - self.app.mesh.min_x
+        y_range = self.app.mesh.max_y - self.app.mesh.min_y
+        tol_x = x_range * self.app.region_manager._resize_tolerance
+        tol_y = y_range * self.app.region_manager._resize_tolerance
+
+        # Check if point is inside but NOT near edges
+        return (min_x + tol_x) < x < (max_x - tol_x) and (min_y + tol_y) < y < (
+            max_y - tol_y
+        )
+
     # --- Mouse interaction ---
 
     def on_mouse_press(self, event) -> None:
@@ -231,6 +271,10 @@ class CanvasController:
         for region in self.app.regions:
             handle = self._get_resize_handle(x, y, region)
             if handle:
+                # Find and select the region being resized
+                region_index = self.app.regions.index(region)
+                self._select_region(region_index)
+
                 self.app.region_manager._resizing = True
                 self.app.region_manager._resize_region = region
                 self.app.region_manager._resize_handle = handle
@@ -239,8 +283,26 @@ class CanvasController:
                 self.app._set_status("Resizing region")
                 return
 
-        # Check for clicks on region interiors (for selection)
-        # Include tolerance padding around the edges
+        # Check for region center clicks (for dragging)
+        for i, region in enumerate(self.app.regions):
+            if self._is_point_in_region_center(x, y, region):
+                self._select_region(i)
+                # Start dragging the region
+                self._dragging_region = True
+                self._dragging_region_obj = region
+                self._drag_region_start = (x, y)
+                # Store original bounds to maintain consistency during drag
+                self._drag_region_original_bounds = (
+                    region.min_point.x,
+                    region.min_point.y,
+                    region.max_point.x,
+                    region.max_point.y,
+                )
+                self.app.region_manager._snapshot_for_undo()
+                self.app._set_status("Moving region")
+                return
+
+        # Check for clicks on region edges (for selection only)
         for i, region in enumerate(self.app.regions):
             if self._is_point_in_region(x, y, region):
                 self._select_region(i)
@@ -280,6 +342,11 @@ class CanvasController:
             self._handle_resize(x, y)
             return
 
+        # Region dragging
+        if self._dragging_region and self._dragging_region_obj is not None:
+            self._handle_region_drag(x, y)
+            return
+
         # Drawing
         if self._dragging and self._current_patch is not None:
             x0, y0 = self._drag_start
@@ -302,6 +369,47 @@ class CanvasController:
 
         # Cursor update
         self._update_cursor(x, y)
+
+    def _handle_region_drag(self, x: float, y: float) -> None:
+        """Handle dragging a region from its center."""
+        region = self._dragging_region_obj
+        if region is None or self._drag_region_original_bounds is None:
+            return
+
+        x0, y0 = self._drag_region_start
+        orig_min_x, orig_min_y, orig_max_x, orig_max_y = (
+            self._drag_region_original_bounds
+        )
+
+        # Calculate delta from initial click position
+        dx = x - x0
+        dy = y - y0
+
+        # Apply delta to original bounds
+        min_x = orig_min_x + dx
+        min_y = orig_min_y + dy
+        max_x = orig_max_x + dx
+        max_y = orig_max_y + dy
+
+        if self.app.settings_manager.snap_var.get():
+            min_x = self._nearest_grid_value(min_x, self.app.mesh.x_coords)
+            max_x = self._nearest_grid_value(max_x, self.app.mesh.x_coords)
+            min_y = self._nearest_grid_value(min_y, self.app.mesh.y_coords)
+            max_y = self._nearest_grid_value(max_y, self.app.mesh.y_coords)
+
+        region.min_point = Point(min_x, min_y)
+        region.max_point = Point(max_x, max_y)
+
+        region.patch.set_xy((min_x, min_y))
+        region.patch.set_width(max_x - min_x)
+        region.patch.set_height(max_y - min_y)
+
+        # Preserve selection color during drag
+        region.patch.set_edgecolor("yellow")
+        region.patch.set_linewidth(2.5)
+
+        # Don't refresh listbox during drag - only draw the canvas
+        self.app.canvas.draw()
 
     def _handle_resize(self, x: float, y: float) -> None:
         region = self.app.region_manager._resize_region
@@ -335,7 +443,13 @@ class CanvasController:
         region.patch.set_width(max_x - min_x)
         region.patch.set_height(max_y - min_y)
 
+        # Update listbox and restore selection to maintain selection during resize
         self.app.region_manager._refresh_region_list()
+        if self._selected_region is not None:
+            line_index = self._selected_region * 3  # 3 lines per region
+            self.app.region_list.selection_set(line_index)
+            self.app.region_list.see(line_index)
+
         self.app.canvas.draw()
 
     def on_mouse_release(self, event) -> None:
@@ -346,6 +460,27 @@ class CanvasController:
             self.app.region_manager._resize_handle = None
             self.app.region_manager._resize_start = None
             self.app._set_status("Resize complete")
+            return
+
+        # Finish region dragging - keep region selected
+        if self._dragging_region:
+            self._dragging_region = False
+            region_being_dragged = self._dragging_region_obj
+            self._dragging_region_obj = None
+            self._drag_region_start = None
+            self._drag_region_original_bounds = None
+            # Update listbox with final coordinates after drag completes
+            self.app.region_manager._refresh_region_list()
+            # Reapply yellow color and restore listbox selection to maintain full selection state
+            if region_being_dragged is not None and self._selected_region is not None:
+                region_being_dragged.patch.set_edgecolor("yellow")
+                region_being_dragged.patch.set_linewidth(2.5)
+                # Restore listbox selection
+                line_index = self._selected_region * 3  # 3 lines per region
+                self.app.region_list.selection_set(line_index)
+                self.app.region_list.see(line_index)
+            self.app.canvas.draw()
+            self.app._set_status("Move complete")
             return
 
         # Finish drawing

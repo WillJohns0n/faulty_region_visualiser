@@ -12,6 +12,8 @@ This tool provides an intuitive graphical interface to define, visualize, and ma
 - **Visual Mesh Display**: See your bed mesh as a color-mapped heatmap
 - **Interactive Region Drawing**: Draw rectangular faulty regions directly on the mesh visualization
 - **Region Management**: Select, resize, and delete regions with real-time updates
+- **Drag and Drop Regions**: Click and drag from a region's center to move it smoothly
+- **Smart Plot Area**: Dynamic plot area sizing based on print area (defaults to Prusa MK3: 250×210mm)
 - **Probe Point Overlay**: Visualize bed probe points and excluded regions
 - **Auto-generated Config**: Export faulty region definitions directly to your configuration
 - **Undo/Redo Support**: Full undo/redo functionality for all operations
@@ -151,23 +153,30 @@ The GUI will open with a file selection panel on the left.
 
 4. **Manage Regions**
    - **Select**: Click inside a region to select it (turns **yellow**)
-   - **Resize**: Hover near edges/corners for resize handles, drag to adjust
+   - **Drag**: Click and drag from the center of a selected region to move it anywhere on the mesh
+   - **Resize**: Hover near edges/corners for resize handles, drag to adjust (region auto-selects during resize)
    - **Delete**: Select a region and press **Delete** or click "Delete selected"
    - **Clear All**: Remove all regions at once
+   - **Scrollbar**: Use the scrollbar in the faulty regions list to navigate through many regions
 
-5. **Adjust Settings**
+5. **Configure Plot Area**
+   - Set "print area x max" and "print area y max" to match your printer's bed size
+   - Defaults to Prusa MK3 (250×210mm)
+   - Plot area auto-expands if loaded mesh exceeds configured bounds
+
+6. **Adjust Settings**
    - Configure mesh bounds in "Bed mesh settings":
      - **mesh_min**: Lower-left corner of mesh (mm)
      - **mesh_max**: Upper-right corner of mesh (mm)
      - **probe_count**: Number of probe points (e.g., 7x7)
 
-6. **Preview Probe Points**
+7. **Preview Probe Points**
    - Enable "Show probe points" checkbox to overlay probe locations
    - Red circles (◯) = valid probe points
    - Red crosses (✕) = probe points excluded by faulty regions
    - Adjust settings and click "Update overlay" to refresh
 
-7. **Export Configuration**
+8. **Export Configuration**
    - Click "Copy to clipboard" to copy region definitions
    - Click "Update einsy-rambo.cfg" to automatically save to your settings file
 

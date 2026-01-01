@@ -101,19 +101,38 @@ class UIBuilder:
             frame, textvariable=self.app.settings_manager.probe_count_var, width=16
         ).grid(row=2, column=1, padx=4)
 
+        # Plot area settings
+        ttk.Separator(frame, orient="horizontal").grid(
+            row=3, column=0, columnspan=2, sticky="ew", pady=6
+        )
+
+        ttk.Label(frame, text="print area x max (mm):").grid(
+            row=4, column=0, sticky="w"
+        )
+        ttk.Entry(
+            frame, textvariable=self.app.settings_manager.plot_area_x_var, width=16
+        ).grid(row=4, column=1, padx=4)
+
+        ttk.Label(frame, text="print area y max (mm):").grid(
+            row=5, column=0, sticky="w"
+        )
+        ttk.Entry(
+            frame, textvariable=self.app.settings_manager.plot_area_y_var, width=16
+        ).grid(row=5, column=1, padx=4)
+
         # Probe overlay controls
         ttk.Checkbutton(
             frame,
             text="Show probe points",
             variable=self.app.settings_manager.show_probe_overlay,
             command=self.app.canvas_controller.update_probe_overlay,
-        ).grid(row=3, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        ).grid(row=6, column=0, columnspan=2, sticky="w", pady=(4, 0))
 
         ttk.Button(
             frame,
             text="Update overlay",
             command=self.app.canvas_controller.update_probe_overlay,
-        ).grid(row=4, column=0, columnspan=2, pady=(4, 0), sticky="ew")
+        ).grid(row=7, column=0, columnspan=2, pady=(4, 0), sticky="ew")
 
     def _build_snap_toggle(self, parent: ttk.Frame) -> None:
         ttk.Checkbutton(
@@ -124,12 +143,26 @@ class UIBuilder:
 
     def _build_region_list(self, parent: ttk.Frame) -> None:
         ttk.Label(parent, text="faulty_region definitions:").pack(anchor="w")
+
+        # Create a frame to hold the listbox and scrollbar
+        listbox_frame = ttk.Frame(parent)
+        listbox_frame.pack(pady=(2, 4), fill="both", expand=True)
+
+        # Create the scrollbar
+        scrollbar = ttk.Scrollbar(listbox_frame)
+        scrollbar.pack(side="right", fill="y")
+
+        # Create the listbox and configure it with the scrollbar
         self.app.region_list = tk.Listbox(
-            parent,
+            listbox_frame,
             width=Config.LISTBOX_WIDTH,
             height=Config.LISTBOX_HEIGHT,
+            yscrollcommand=scrollbar.set,
         )
-        self.app.region_list.pack(pady=(2, 4))
+        self.app.region_list.pack(side="left", fill="both", expand=True)
+
+        # Configure scrollbar to work with listbox
+        scrollbar.config(command=self.app.region_list.yview)
 
     def _build_buttons(self, parent: ttk.Frame) -> None:
         frame = ttk.Frame(parent)

@@ -37,3 +37,8 @@ class Config:
 
     # File
     SUPPORTED_EXTENSIONS = (".cfg",)
+
+    # Print area (Prusa MK3 default in mm)
+    DEFAULT_PLOT_AREA_X = 250
+    DEFAULT_PLOT_AREA_Y = 210
+    PLOT_AREA_MARGIN = 5  # Extra margin when mesh exceeds plot area
