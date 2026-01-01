@@ -4,7 +4,8 @@ A visual tool to help optimize bed mesh settings and faulty regions on a **Prusa
 
 This tool provides an intuitive graphical interface to define, visualize, and manage faulty regions on your bed mesh.
 
-<img width="1305" height="791" alt="image" src="https://github.com/user-attachments/assets/940ab946-97c0-4def-acd4-7f56872b770f" />
+<img width="1334" height="863" alt="image" src="https://github.com/user-attachments/assets/557c9ad0-fab3-4a41-b76d-26f85ca17aed" />
+
 
 
 ## Features
