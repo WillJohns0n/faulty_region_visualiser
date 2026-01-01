@@ -23,9 +23,48 @@ Before using this tool, you need to:
 
 ### 1. Create a High-Resolution Bed Mesh
 
-On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh (minimum suggested **50x50 points**):
+On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh for accurate faulty region identification:
 
-Higher resolution meshes (e.g., 100x100) provide better accuracy for defining faulty regions but take a long time for the printer to generate.
+#### a) Backup Your Configuration
+Before making changes, save a copy of your current `einsy-rambo.cfg` file as a backup.
+
+#### b) Maximize Bed Mesh Area
+Edit the `[bed_mesh]` section in `einsy-rambo.cfg` to maximize the usable bed area. Suggested values:
+```ini
+[bed_mesh]
+mesh_max: 252, 210
+mesh_min: 24, 6
+```
+
+After updating, run a quick **3x3 mesh test** while watching your printer to ensure these limits are safe and don't cause collisions.
+
+#### c) Remove Interpolation
+Disable mesh point interpolation for raw probe data:
+```ini
+mesh_pps: 0
+```
+
+#### d) Remove Existing Faulty Regions
+Delete or comment out any pre-existing faulty region definitions in the `[bed_mesh]` section to start fresh.
+
+#### e) Increase Probe Count
+Use a high-resolution probe count for accurate magnet detection:
+```ini
+probe_count: 75, 75
+```
+
+Higher resolution meshes (e.g., 75x75) provide better accuracy for defining faulty regions but will take a long time for the printer to generate.
+
+#### f) Optimize Probe Sampling (Optional)
+In the `[probe]` section, consider reducing the probe sample count to speed up mesh generation if your probe accuracy is good:
+```ini
+samples: 2
+```
+
+Then run the full high-resolution mesh on your printer:
+```gcode
+BED_MESH_CALIBRATE
+```
 
 ### 2. Save Configuration
 
@@ -37,29 +76,52 @@ SAVE_CONFIG
 
 This saves the mesh data to `printer.cfg` in your Klipper configuration directory.
 
-### 3. Download Configuration Files
+### 3. Restore Your Configuration and Download Mesh Data
+
+Now that you have generated the high-resolution mesh data, restore your normal printing configuration:
+
+#### a) Restore Backup Configuration
+Restore your backup `einsy-rambo.cfg` file to reinstate your normal day-to-day printing settings. This file has the correct settings for regular printing and is no longer needed for mesh generation.
+
+#### b) Download Configuration Files
 
 You need two files from your printer:
 
-#### `printer.cfg`
-Contains the bed mesh point data. Download from your Klipper web interface or via SSH.
+##### `printer.cfg`
+Contains the bed mesh point data (from the high-resolution calibration you just completed). Download from your Klipper web interface or via SSH.
 
-#### `einsy-rambo.cfg`
-Contains existing faulty region definitions and bed mesh settings.
+##### `einsy-rambo.cfg`
+Your restored backup configuration file with your normal bed mesh settings and faulty region definitions.
 
 ## Installation
 
-### Requirements
-- Python 3.8+
-- pip
+### System Requirements
+- **Python 3.8 or higher** - [Download Python](https://www.python.org/downloads/) if you don't have it
+  - During installation, **check the box "Add Python to PATH"** (important for Windows users)
+  - Verify installation by opening a terminal/command prompt and typing: `python --version`
 
-### Setup
+### Step-by-Step Setup
 
-1. Clone or download this repository
-2. Install dependencies:
+#### 1. Download This Repository
+- Click the green "Code" button on GitHub and select "Download ZIP"
+- Extract the ZIP file to a folder on your computer (e.g., `C:\Users\YourName\Downloads\faulty_region_visualiser`)
+
+#### 2. Open a Terminal/Command Prompt
+- **Windows**: Press `Win+R`, type `cmd`, and press Enter
+- **macOS/Linux**: Open Terminal from Applications
+
+#### 3. Navigate to the Project Folder
+Type the following command, replacing the path with where you extracted the files:
+```bash
+cd C:\Users\YourName\Downloads\faulty_region_visualiser
+```
+
+#### 4. Install Dependencies
+Copy and paste this command, then press Enter:
 ```bash
 pip install -r requirements.txt
 ```
+This will download and install all required Python packages. You'll see some text scrolling by — this is normal. Wait for it to finish.
 
 ## Usage
 
