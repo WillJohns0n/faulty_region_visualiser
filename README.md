@@ -28,10 +28,16 @@ Before using this tool, you need to:
 On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh for accurate faulty region identification:
 
 #### a) Backup Your Configuration
-Before making changes, save a copy of your current `einsy-rambo.cfg` file as a backup. If your `[bed_mesh]` section is in `printer.cfg` instead of `einsy-rambo.cfg`, also backup `printer.cfg`.
+Before making changes, save a copy of your current configuration file as a backup.
+
+> **Note**: The `[bed_mesh]` section may be located in different files depending on your Klipper setup:
+> - **Separate file**: Some setups (like Prusa MK3 with einsy-rambo board) use a separate `einsy-rambo.cfg` file
+> - **printer.cfg**: Other setups have `[bed_mesh]` directly in `printer.cfg`
+>
+> Identify which file contains your `[bed_mesh]` section and back up that file.
 
 #### b) Maximize Bed Mesh Area
-Edit the `[bed_mesh]` section in your configuration file (either `einsy-rambo.cfg` or `printer.cfg`, depending on where it's located) to maximize the usable bed area. Suggested values:
+Edit the `[bed_mesh]` section in your configuration file to maximize the usable bed area. Suggested values:
 ```ini
 [bed_mesh]
 mesh_max: 252, 210
@@ -60,7 +66,7 @@ Higher resolution meshes (e.g., 75x75) provide better accuracy for defining faul
 #### f) Optimize Probe Sampling (Optional)
 In the `[probe]` section, consider reducing the probe sample count to speed up mesh generation if your probe accuracy is good:
 ```ini
-samples: 2 
+samples: 2
 ```
 
 Then run the full high-resolution mesh on your printer:
@@ -70,13 +76,11 @@ BED_MESH_CALIBRATE
 
 **Important**: The bed mesh must be saved with the name "default" for this tool to recognize it. If your mesh has a different name, rename it to "default" in your configuration before saving.
 
-### 2. Save Configuration
+### 2. Save the mesh data
 
 After calibrating, save the mesh to your printer configuration with the name **default**:
 
-
-
-
+This saves the mesh data to `printer.cfg` in your Klipper configuration directory.
 
 ### 3. Restore Your Configuration and Download Mesh Data
 
@@ -87,7 +91,15 @@ Restore your backup [bed_mesh] settings to reinstate your normal day-to-day prin
 
 #### b) Download Configuration Files
 
-You need the high resolution mesh data in printer.cfg and your regular [bed_mesh] settings in either printer.cfg or einsy-rambo.cfg. Download the required files from your Klipper web interface or via SSH.
+Download the required files from your printer via your Klipper web interface (Mainsail/Fluidd) or SSH:
+
+##### `printer.cfg` (always required)
+Contains the bed mesh point data (from the high-resolution calibration you just completed).
+
+##### `einsy-rambo.cfg` or similar (only if [bed_mesh] is in a separate file)
+If your `[bed_mesh]` settings are in a separate configuration file (common with Prusa MK3/einsy-rambo setups), download that file too.
+
+> **Tip**: If your `[bed_mesh]` section is directly in `printer.cfg`, you only need to download `printer.cfg` — this single file contains both the mesh data and the settings.
 
 ## Installation
 
@@ -133,7 +145,10 @@ The GUI will open with a file selection panel on the left.
 
 1. **Load Mesh Data**
    - Click "Browse" next to "Mesh source (printer.cfg)" and select your `printer.cfg` file
-   - Click "Browse" next to "Settings (einsy-rambo.cfg)" and select your configuration file (if required)
+   - **If `[bed_mesh]` is in a separate file** (e.g., `einsy-rambo.cfg`):
+     - Click "Browse" next to "Settings" and select that configuration file
+   - **If `[bed_mesh]` is in `printer.cfg`**:
+     - Check the box **"[bed_mesh] is in printer.cfg"** — this hides the separate settings file option
    - Click "Load data" to import the mesh and settings
 
 2. **Visualize Your Mesh**
@@ -172,7 +187,9 @@ The GUI will open with a file selection panel on the left.
 
 8. **Export Configuration**
    - Click "Copy to clipboard" to copy region definitions
-   - Click "Update einsy-rambo.cfg" to automatically save to your settings file
+   - Click "Update config file" to automatically save to your configuration file
+     - If "[bed_mesh] is in printer.cfg" is checked, updates `printer.cfg`
+     - Otherwise, updates the separate settings file (e.g., `einsy-rambo.cfg`)
 
 ### Keyboard Shortcuts
 
