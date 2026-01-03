@@ -70,11 +70,14 @@ BED_MESH_CALIBRATE
 
 ### 2. Save Configuration
 
-After calibrating, save the mesh to your printer configuration:
+After calibrating, save the mesh to your printer configuration with the name **default**:
 
 ```gcode
+BED_MESH_PROFILE SAVE=default
 SAVE_CONFIG
 ```
+
+**Important:** The mesh must be saved with the profile name `default`. This tool specifically looks for a `[bed_mesh default]` section in printer.cfg. If your mesh is saved with a different name, the tool will not be able to load it.
 
 This saves the mesh data to `printer.cfg` in your Klipper configuration directory.
 

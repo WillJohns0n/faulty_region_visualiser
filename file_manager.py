@@ -39,16 +39,27 @@ class FileManager:
     def load_data(self) -> None:
         """Load mesh and settings data from selected files."""
         mesh_path = self.app.mesh_path_var.get().strip()
-        settings_path = self.app.settings_path_var.get().strip()
+        bed_mesh_in_printer = self.app.settings_manager.bed_mesh_in_printer_cfg.get()
 
-        if not mesh_path or not settings_path:
-            messagebox.showwarning(
-                "Missing files", "Please select both printer.cfg and einsy-rambo.cfg."
-            )
+        if not mesh_path:
+            messagebox.showwarning("Missing file", "Please select printer.cfg.")
             return
 
+        # If bed_mesh is in a separate file, check for settings path
+        if not bed_mesh_in_printer:
+            settings_path = self.app.settings_path_var.get().strip()
+            if not settings_path:
+                messagebox.showwarning(
+                    "Missing files",
+                    "Please select both printer.cfg and einsy-rambo.cfg,\nor check '[bed_mesh] is in printer.cfg'.",
+                )
+                return
+            settings_file = Path(settings_path)
+        else:
+            # Use printer.cfg for both mesh data and settings
+            settings_file = Path(mesh_path)
+
         mesh_file = Path(mesh_path)
-        settings_file = Path(settings_path)
 
         try:
             m_txt = read_mesh_text(mesh_file)
@@ -61,7 +72,11 @@ class FileManager:
 
             self.app.settings_manager.apply_loaded_settings(settings)
             self.app.region_manager.apply_loaded_data(mesh, settings)
-            self.app._set_status("Loaded mesh and settings")
+
+            if bed_mesh_in_printer:
+                self.app._set_status("Loaded mesh and settings from printer.cfg")
+            else:
+                self.app._set_status("Loaded mesh and settings")
 
         except Exception as e:
             logger.exception("Error loading data")
@@ -70,12 +85,23 @@ class FileManager:
 
     def update_settings_cfg(self) -> None:
         """Update the settings configuration file with current regions."""
-        if not self.app.settings_path_var.get().strip():
-            messagebox.showwarning(
-                "No settings file", "Please select einsy-rambo.cfg first."
-            )
-            return
-        settings_path = Path(self.app.settings_path_var.get().strip())
+        bed_mesh_in_printer = self.app.settings_manager.bed_mesh_in_printer_cfg.get()
+
+        if bed_mesh_in_printer:
+            # Use printer.cfg for settings
+            if not self.app.mesh_path_var.get().strip():
+                messagebox.showwarning("No file", "Please select printer.cfg first.")
+                return
+            settings_path = Path(self.app.mesh_path_var.get().strip())
+        else:
+            # Use separate settings file
+            if not self.app.settings_path_var.get().strip():
+                messagebox.showwarning(
+                    "No settings file", "Please select einsy-rambo.cfg first."
+                )
+                return
+            settings_path = Path(self.app.settings_path_var.get().strip())
+
         try:
             content = read_settings_text(settings_path)
 
@@ -90,7 +116,11 @@ class FileManager:
             )
             settings_path.write_text(updated, encoding="utf-8")
             messagebox.showinfo("Updated", f"Updated [bed_mesh] in:\n{settings_path}")
-            self.app._set_status("Updated einsy-rambo.cfg")
+
+            if bed_mesh_in_printer:
+                self.app._set_status("Updated printer.cfg")
+            else:
+                self.app._set_status("Updated einsy-rambo.cfg")
         except Exception as e:
             logger.exception("Update failed")
             messagebox.showerror("Error", f"Failed to update:\n{e}")

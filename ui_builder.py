@@ -65,22 +65,43 @@ class UIBuilder:
             frame, text="Browse", command=lambda: self.app.file_manager.browse_mesh()
         ).grid(row=0, column=2, padx=2)
 
-        ttk.Label(frame, text="Settings (einsy-rambo.cfg):").grid(
-            row=1, column=0, sticky="w"
+        # Checkbox for [bed_mesh] in printer.cfg
+        ttk.Checkbutton(
+            frame,
+            text="[bed_mesh] is in printer.cfg",
+            variable=self.app.settings_manager.bed_mesh_in_printer_cfg,
+            command=self._toggle_settings_row,
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(4, 4))
+
+        # Settings file row (can be hidden)
+        self.settings_label = ttk.Label(frame, text="Settings (einsy-rambo.cfg):")
+        self.settings_label.grid(row=2, column=0, sticky="w")
+        self.settings_entry = ttk.Entry(
+            frame, textvariable=self.app.settings_path_var, width=32
         )
-        ttk.Entry(frame, textvariable=self.app.settings_path_var, width=32).grid(
-            row=1, column=1, padx=4
-        )
-        ttk.Button(
+        self.settings_entry.grid(row=2, column=1, padx=4)
+        self.settings_browse_btn = ttk.Button(
             frame,
             text="Browse",
             command=lambda: self.app.file_manager.browse_settings(),
-        ).grid(row=1, column=2, padx=2)
+        )
+        self.settings_browse_btn.grid(row=2, column=2, padx=2)
 
         self.app.load_button = ttk.Button(
             frame, text="Load data", command=self.app.file_manager.load_data
         )
-        self.app.load_button.grid(row=2, column=1, pady=6)
+        self.app.load_button.grid(row=3, column=1, pady=6)
+
+    def _toggle_settings_row(self) -> None:
+        """Show or hide the settings file row based on checkbox state."""
+        if self.app.settings_manager.bed_mesh_in_printer_cfg.get():
+            self.settings_label.grid_remove()
+            self.settings_entry.grid_remove()
+            self.settings_browse_btn.grid_remove()
+        else:
+            self.settings_label.grid()
+            self.settings_entry.grid()
+            self.settings_browse_btn.grid()
 
     def _build_settings_section(self, parent: ttk.Frame) -> None:
         frame = ttk.LabelFrame(parent, text="Bed mesh settings", padding=(4, 4))
@@ -195,7 +216,7 @@ class UIBuilder:
         ).pack(side="left", padx=2)
         ttk.Button(
             frame3,
-            text="Update einsy-rambo.cfg",
+            text="Update config file",
             command=self.app.file_manager.update_settings_cfg,
         ).pack(side="left", padx=2)
 

@@ -23,6 +23,9 @@ class SettingsManager:
         self.show_probe_overlay = tk.BooleanVar(value=False)
         self.snap_var = tk.BooleanVar(value=False)
 
+        # File configuration - when True, [bed_mesh] is in printer.cfg instead of separate file
+        self.bed_mesh_in_printer_cfg = tk.BooleanVar(value=False)
+
     def apply_loaded_settings(self, settings: BedMeshSettings) -> None:
         """Apply loaded settings to the UI variables."""
         self.mesh_min_var.set(settings.mesh_min)
