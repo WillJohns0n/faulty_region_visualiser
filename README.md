@@ -4,8 +4,7 @@ A visual tool to help optimize bed mesh settings and faulty regions on a **Prusa
 
 This tool provides an intuitive graphical interface to define, visualize, and manage faulty regions on your bed mesh.
 
-<img width="1334" height="863" alt="image" src="https://github.com/user-attachments/assets/557c9ad0-fab3-4a41-b76d-26f85ca17aed" />
-
+<img width="1305" height="791" alt="image" src="https://github.com/user-attachments/assets/940ab946-97c0-4def-acd4-7f56872b770f" />
 
 
 ## Features
@@ -29,10 +28,10 @@ Before using this tool, you need to:
 On your Prusa MK3/MK3S+ printer, generate a high-resolution bed mesh for accurate faulty region identification:
 
 #### a) Backup Your Configuration
-Before making changes, save a copy of your current `einsy-rambo.cfg` file as a backup.
+Before making changes, save a copy of your current `einsy-rambo.cfg` file as a backup. If your `[bed_mesh]` section is in `printer.cfg` instead of `einsy-rambo.cfg`, also backup `printer.cfg`.
 
 #### b) Maximize Bed Mesh Area
-Edit the `[bed_mesh]` section in `einsy-rambo.cfg` to maximize the usable bed area. Suggested values:
+Edit the `[bed_mesh]` section in your configuration file (either `einsy-rambo.cfg` or `printer.cfg`, depending on where it's located) to maximize the usable bed area. Suggested values:
 ```ini
 [bed_mesh]
 mesh_max: 252, 210
@@ -61,7 +60,7 @@ Higher resolution meshes (e.g., 75x75) provide better accuracy for defining faul
 #### f) Optimize Probe Sampling (Optional)
 In the `[probe]` section, consider reducing the probe sample count to speed up mesh generation if your probe accuracy is good:
 ```ini
-samples: 2
+samples: 2 
 ```
 
 Then run the full high-resolution mesh on your printer:
@@ -69,35 +68,26 @@ Then run the full high-resolution mesh on your printer:
 BED_MESH_CALIBRATE
 ```
 
+**Important**: The bed mesh must be saved with the name "default" for this tool to recognize it. If your mesh has a different name, rename it to "default" in your configuration before saving.
+
 ### 2. Save Configuration
 
 After calibrating, save the mesh to your printer configuration with the name **default**:
 
-```gcode
-BED_MESH_PROFILE SAVE=default
-SAVE_CONFIG
-```
 
-**Important:** The mesh must be saved with the profile name `default`. This tool specifically looks for a `[bed_mesh default]` section in printer.cfg. If your mesh is saved with a different name, the tool will not be able to load it.
 
-This saves the mesh data to `printer.cfg` in your Klipper configuration directory.
+
 
 ### 3. Restore Your Configuration and Download Mesh Data
 
 Now that you have generated the high-resolution mesh data, restore your normal printing configuration:
 
 #### a) Restore Backup Configuration
-Restore your backup `einsy-rambo.cfg` file to reinstate your normal day-to-day printing settings. This file has the correct settings for regular printing and is no longer needed for mesh generation.
+Restore your backup [bed_mesh] settings to reinstate your normal day-to-day printing settings. These are the correct settings for regular printing and will be needed to visualise your intended probe points and faulty regions in the tool.
 
 #### b) Download Configuration Files
 
-You need two files from your printer:
-
-##### `printer.cfg`
-Contains the bed mesh point data (from the high-resolution calibration you just completed). Download from your Klipper web interface or via SSH.
-
-##### `einsy-rambo.cfg`
-Your restored backup configuration file with your normal bed mesh settings and faulty region definitions.
+You need the high resolution mesh data in printer.cfg and your regular [bed_mesh] settings in either printer.cfg or einsy-rambo.cfg. Download the required files from your Klipper web interface or via SSH.
 
 ## Installation
 
@@ -143,7 +133,7 @@ The GUI will open with a file selection panel on the left.
 
 1. **Load Mesh Data**
    - Click "Browse" next to "Mesh source (printer.cfg)" and select your `printer.cfg` file
-   - Click "Browse" next to "Settings (einsy-rambo.cfg)" and select your configuration file
+   - Click "Browse" next to "Settings (einsy-rambo.cfg)" and select your configuration file (if required)
    - Click "Load data" to import the mesh and settings
 
 2. **Visualize Your Mesh**
@@ -196,8 +186,4 @@ The GUI will open with a file selection panel on the left.
 
 Enable "Snap rectangles to mesh grid" to automatically align regions to your mesh points.
 
-
-Copy these definitions into your Klipper configuration:
-- For Mainsail/Fluidd web interface: Paste into your `einsy-rambo.cfg` file
-- Or add directly to `printer.cfg` and run `SAVE_CONFIG`
 
