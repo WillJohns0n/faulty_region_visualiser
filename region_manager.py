@@ -37,13 +37,31 @@ class RegionManager:
         self._refresh_region_list()
         self.app.canvas_controller.redraw()
 
-    def _refresh_region_list(self) -> None:
-        """Update the region listbox with current regions."""
+    def _refresh_region_list(self, update_overlay: bool = True) -> None:
+        """Update the region listbox with current regions.
+
+        Args:
+            update_overlay: Whether to update the probe overlay after refreshing.
+                           Set to False during drag operations for better performance.
+        """
         self.app.region_list.delete(0, "end")
         for i, r in enumerate(self.app.regions, start=1):
             for line in r.format_klipper(i):
                 self.app.region_list.insert("end", line)
-            self.app.region_list.insert("end", "")
+        # Apply alternating background colors for each region block (2 lines per region)
+        self._apply_region_colors()
+        # Auto-update probe overlay to show which points are excluded
+        if update_overlay:
+            self.app.canvas_controller.update_probe_overlay()
+
+    def _apply_region_colors(self) -> None:
+        """Apply alternating background colors to region blocks in the listbox."""
+        colors = ("#ffffff", "#f0f0f0")  # White and light gray
+        num_items = self.app.region_list.size()
+        for i in range(num_items):
+            region_index = i // 2  # 2 lines per region
+            bg_color = colors[region_index % 2]
+            self.app.region_list.itemconfig(i, bg=bg_color)
 
     def delete_selected(self) -> None:
         """Delete the currently selected region."""
@@ -52,7 +70,7 @@ class RegionManager:
             self.app._set_status("No region selected")
             return
         line_index = sel[0]
-        region_index = line_index // 3
+        region_index = line_index // 2  # 2 lines per region (min, max)
         if region_index < 0 or region_index >= len(self.app.regions):
             return
 

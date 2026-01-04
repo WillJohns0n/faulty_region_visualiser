@@ -29,7 +29,7 @@ class Config:
     RECT_ZORDER = 6
 
     # GUI
-    LISTBOX_WIDTH = 40
+    LISTBOX_WIDTH = 34
     LISTBOX_HEIGHT = 18
 
     # Undo/redo

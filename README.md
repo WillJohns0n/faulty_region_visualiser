@@ -9,15 +9,32 @@ This tool provides an intuitive graphical interface to define, visualize, and ma
 
 ## Features
 
-- **Visual Mesh Display**: See your bed mesh as a color-mapped heatmap
-- **Interactive Region Drawing**: Draw rectangular faulty regions directly on the mesh visualization
-- **Region Management**: Select, resize, and delete regions with real-time updates
-- **Drag and Drop Regions**: Click and drag from a region's center to move it smoothly
+### Mesh Visualisation
+- **Heatmap Display**: View your bed mesh as a color-mapped heatmap (brighter = higher Z offset)
+- **Z-Scale Control**: Adjustable colour range sliders to highlight specific height variations
+- **Mesh Grid Points**: Toggle display of individual mesh probe points
 - **Smart Plot Area**: Dynamic plot area sizing based on print area (defaults to Prusa MK3: 250×210mm)
-- **Probe Point Overlay**: Visualize bed probe points and excluded regions
-- **Auto-generated Config**: Export faulty region definitions directly to your configuration
-- **Undo/Redo Support**: Full undo/redo functionality for all operations
-- **Grid Snapping**: Optional snapping to mesh grid points for precision
+
+### Faulty Region Management
+- **Interactive Drawing**: Click and drag on the mesh to draw rectangular faulty regions
+- **Region Selection**: Click inside a region to select it (highlighted in yellow)
+- **Drag to Move**: Click and drag from a region's center to reposition it
+- **Resize Handles**: Hover near edges/corners for resize handles, drag to adjust
+- **Live Coordinate Updates**: Region coordinates update in real-time during drag and resize operations
+- **Grid Snapping**: Optional snapping to mesh grid points for precision alignment
+
+### Probe Point Overlay
+- **Visual Probe Points**: See exactly where your printer will probe
+- **Exclusion Preview**: Points inside faulty regions shown as crosses (✕), valid points as circles (◯)
+- **Auto-Update**: Overlay automatically updates when bed mesh settings or faulty regions change
+- **Configurable Settings**: Adjust mesh_min, mesh_max, and probe_count.
+
+### Workflow Features
+- **Undo/Redo Support**: Full undo/redo functionality with toolbar buttons and keyboard shortcuts
+- **Collapsible Panels**: Clean interface with expandable/collapsible settings sections
+- **Tooltips**: Hover over buttons and labels for helpful guidance
+- **Copy to Clipboard**: Export faulty region definitions ready to paste into your config
+- **Direct Config Update**: Save regions directly to your configuration file
 
 ## Prerequisites
 
@@ -40,11 +57,11 @@ Before making changes, save a copy of your current configuration file as a backu
 Edit the `[bed_mesh]` section in your configuration file to maximize the usable bed area. Suggested values:
 ```ini
 [bed_mesh]
-mesh_max: 252, 210
+mesh_max: 245, 210
 mesh_min: 24, 6
 ```
 
-After updating, run a quick **3x3 mesh test** while watching your printer to ensure these limits are safe and don't cause collisions.
+After updating, run a quick **3x3 mesh test** while watching your printer to ensure these limits are safe and don't cause collisions. Check the probe is not leaving the boundary of the print plate.
 
 #### c) Remove Interpolation
 Disable mesh point interpolation for raw probe data:
@@ -64,7 +81,7 @@ probe_count: 75, 75
 Higher resolution meshes (e.g., 75x75) provide better accuracy for defining faulty regions but will take a long time for the printer to generate.
 
 #### f) Optimize Probe Sampling (Optional)
-In the `[probe]` section, consider reducing the probe sample count to speed up mesh generation if your probe accuracy is good:
+In the `[probe]` section, consider reducing the probe sample count to speed up mesh generation if your probe repeatability is good (1 sample maybe enough for SuperPINDA):
 ```ini
 samples: 2
 ```
@@ -73,8 +90,6 @@ Then run the full high-resolution mesh on your printer:
 ```gcode
 BED_MESH_CALIBRATE
 ```
-
-**Important**: The bed mesh must be saved with the name "default" for this tool to recognize it. If your mesh has a different name, rename it to "default" in your configuration before saving.
 
 ### 2. Save the mesh data
 
@@ -115,7 +130,7 @@ If your `[bed_mesh]` settings are in a separate configuration file (common with 
 - Extract the ZIP file to a folder on your computer (e.g., `C:\Users\YourName\Downloads\faulty_region_visualiser`)
 
 #### 2. Open a Terminal/Command Prompt
-- **Windows**: Press `Win+R`, type `cmd`, and press Enter
+- **Windows**: Press `Win+R`, type `cmd`, and press Enter. Or right click on folder and select open in terminal.
 - **macOS/Linux**: Open Terminal from Applications
 
 #### 3. Navigate to the Project Folder
@@ -139,55 +154,52 @@ This will download and install all required Python packages. You'll see some tex
 python main.py
 ```
 
-The GUI will open with a file selection panel on the left.
+The GUI will open with a panel interface on the left side.
+
+### Interface Overview
+
+The left panel contains these sections:
+- **Toolbar**: Undo (↶), Redo (↷), and Close (✕) buttons
+- **Files**: Load mesh data and configuration files
+- **Visualisation settings**: Z-scale, print area, mesh grid, and snap options (collapsed by default)
+- **Bed mesh settings**: Klipper mesh_min, mesh_max, probe_count, and probe overlay toggle
+- **Faulty regions**: List of defined regions with Delete, Clear, Copy, and Save buttons
 
 ### Step-by-Step Workflow
 
 1. **Load Mesh Data**
-   - Click "Browse" next to "Mesh source (printer.cfg)" and select your `printer.cfg` file
+   - Click "..." next to "Mesh source" and select your `printer.cfg` file
    - **If `[bed_mesh]` is in a separate file** (e.g., `einsy-rambo.cfg`):
-     - Click "Browse" next to "Settings" and select that configuration file
+     - Click "..." next to "Mesh settings" and select that configuration file
    - **If `[bed_mesh]` is in `printer.cfg`**:
      - Check the box **"[bed_mesh] is in printer.cfg"** — this hides the separate settings file option
    - Click "Load data" to import the mesh and settings
 
 2. **Visualize Your Mesh**
-   - The bed mesh heatmap will display (brighter colors = higher Z offset)
-   - Black dots show all probe points in the mesh
+   - The bed mesh heatmap displays automatically (brighter colors = higher Z offset)
+   - Expand "Visualisation settings" to adjust Z-scale colour range
 
-3. **Define Faulty Regions**
-   - Click and drag on the mesh to draw rectangular regions around the areas affected by magnets
-   - Regions are outlined in **red dashed lines**
-   - Release to finish drawing
-
-4. **Manage Regions**
-   - **Select**: Click inside a region to select it (turns **yellow**)
-   - **Drag**: Click and drag from the center of a selected region to move it anywhere on the mesh
-   - **Resize**: Hover near edges/corners for resize handles, drag to adjust (region auto-selects during resize)
-   - **Delete**: Select a region and press **Delete** or click "Delete selected"
-   - **Clear All**: Remove all regions at once
-   - **Scrollbar**: Use the scrollbar in the faulty regions list to navigate through many regions
-
-5. **Configure Plot Area**
-   - Set "print area x max" and "print area y max" to match your printer's bed size
-   - Defaults to Prusa MK3 (250×210mm)
-   - Plot area auto-expands if loaded mesh exceeds configured bounds
-
-6. **Adjust Settings**
-   - Configure mesh bounds in "Bed mesh settings":
-     - **mesh_min**: Lower-left corner of mesh (mm)
-     - **mesh_max**: Upper-right corner of mesh (mm)
-     - **probe_count**: Number of probe points (e.g., 7x7)
-
-7. **Preview Probe Points**
-   - Enable "Show probe points" checkbox to overlay probe locations
+3. **Configure Probe Overlay**
+   - In "Bed mesh settings", verify mesh_min, mesh_max, and probe_count match your intended Klipper config
    - Red circles (◯) = valid probe points
    - Red crosses (✕) = probe points excluded by faulty regions
-   - Adjust settings and click "Update overlay" to refresh
+   - The overlay updates automatically when you change settings or modify regions
 
-8. **Export Configuration**
-   - Click "Copy to clipboard" to copy region definitions
-   - Click "Update config file" to automatically save to your configuration file
+4. **Define Faulty Regions**
+   - Click and drag on the mesh to draw rectangular regions around areas affected by magnets
+   - Regions are outlined in **red dashed lines**
+
+5. **Manage Regions**
+   - **Select**: Click inside a region to select it (turns **yellow**)
+   - **Move**: Click and drag from the center of a selected region to reposition it
+   - **Resize**: Hover near edges/corners for resize handles, drag to adjust
+   - **Delete**: Select a region and press **Delete** or click "Delete"
+   - **Clear**: Remove all regions at once
+   - Coordinates in the list update live during drag and resize operations
+
+6. **Export Configuration**
+   - Click "Copy" to copy region definitions to clipboard
+   - Click "Save" to write regions directly to your configuration file
      - If "[bed_mesh] is in printer.cfg" is checked, updates `printer.cfg`
      - Otherwise, updates the separate settings file (e.g., `einsy-rambo.cfg`)
 
@@ -199,8 +211,13 @@ The GUI will open with a file selection panel on the left.
 | `Ctrl+Y` | Redo |
 | `Delete` | Delete selected region |
 
-### Grid Snapping
+### Visualisation Settings
 
-Enable "Snap rectangles to mesh grid" to automatically align regions to your mesh points.
+Expand the "Visualisation settings" panel to access:
+- **Print area X/Y max**: Set your printer's bed dimensions (affects plot bounds)
+- **Z-scale sliders**: Adjust the colour range to highlight specific height variations
+- **Reset to data range**: Restore Z-scale to the actual mesh data range
+- **Show mesh grid points**: Toggle visibility of individual mesh probe points on the heatmap
+- **Snap rectangles to mesh grid**: Enable grid snapping for precise region placement
 
 

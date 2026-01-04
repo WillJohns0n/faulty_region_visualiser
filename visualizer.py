@@ -1,6 +1,4 @@
-# visualizer.py
-
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -13,15 +11,25 @@ from models import MeshData, Region, PlotBounds
 
 
 class MeshVisualizer:
-    """Handles all matplotlib drawing."""
+    """Handles all matplotlib drawing with external colour scale control."""
 
     def __init__(self, fig: Figure, ax: Axes):
         self.fig = fig
         self.ax = ax
 
+        # Colorbar axis
         divider = make_axes_locatable(self.ax)
         self.cax = divider.append_axes("right", size="5%", pad=0.05)
+
         self._colorbar = None
+        self._im = None  # store the imshow object
+
+        # Store current mesh z-range for external access
+        self.z_min = 0.0
+        self.z_max = 1.0
+
+        # Callback for when z-range is updated (set by UI)
+        self.on_z_range_changed: Optional[Callable[[float, float], None]] = None
 
     def draw_mesh(
         self,
@@ -29,11 +37,14 @@ class MeshVisualizer:
         regions: List[Region],
         plot_bounds: Optional[PlotBounds] = None,
         probe_overlay: Optional[Dict[str, Any]] = None,
+        vmin: Optional[float] = None,
+        vmax: Optional[float] = None,
+        show_mesh_grid: bool = False,
     ) -> None:
         self.ax.clear()
         self.cax.clear()
 
-        # Use plot_bounds if provided, otherwise fall back to mesh bounds
+        # Default bounds
         if plot_bounds is None:
             plot_bounds = PlotBounds(
                 min_x=mesh.min_x,
@@ -42,23 +53,29 @@ class MeshVisualizer:
                 max_y=mesh.max_y,
             )
 
-        im = self.ax.imshow(
+        # Draw mesh
+        self._im = self.ax.imshow(
             mesh.grid,
             origin="lower",
             cmap=Config.COLORMAP,
             extent=(mesh.min_x, mesh.max_x, mesh.min_y, mesh.max_y),
             interpolation="nearest",
             aspect="equal",
+            vmin=vmin,
+            vmax=vmax,
         )
 
+        # Colorbar
         self._colorbar = self.fig.colorbar(
-            im,
+            self._im,
             cax=self.cax,
             orientation="vertical",
             label="Z offset (mm)",
         )
 
-        self._draw_probe_points(mesh)
+        # Draw probe points (black dots) if enabled
+        if show_mesh_grid:
+            self._draw_probe_points(mesh)
 
         if probe_overlay and probe_overlay.get("enabled"):
             self._draw_probe_overlay(probe_overlay, regions)
@@ -66,37 +83,35 @@ class MeshVisualizer:
         for r in regions:
             self.ax.add_patch(r.patch)
 
+        # Axes labels
         self.ax.set_xlim(plot_bounds.min_x, plot_bounds.max_x)
         self.ax.set_ylim(plot_bounds.min_y, plot_bounds.max_y)
         self.ax.set_xlabel("X (mm)")
         self.ax.set_ylabel("Y (mm)")
         self.ax.set_title("Bed Mesh with Faulty Regions")
 
-    def clear_probe_points(self) -> None:
-        """Clear probe overlay points and outline."""
-        # For now, just redraw without overlay
-        # In a more sophisticated implementation, we'd track and remove specific artists
-        pass
+        # Store z-range and notify callback
+        self.z_min = float(np.nanmin(mesh.grid))
+        self.z_max = float(np.nanmax(mesh.grid))
 
-    def draw_probe_points(
-        self,
-        mesh_min: tuple[float, float],
-        mesh_max: tuple[float, float],
-        probe_count: tuple[int, int],
-        regions: List[Region],
-    ) -> None:
-        """Draw probe overlay points and outline."""
-        cfg = {
-            "enabled": True,
-            "mesh_min_x": mesh_min[0],
-            "mesh_min_y": mesh_min[1],
-            "mesh_max_x": mesh_max[0],
-            "mesh_max_y": mesh_max[1],
-            "probe_count_x": probe_count[0],
-            "probe_count_y": probe_count[1],
-        }
-        self._draw_probe_overlay(cfg, regions)
+        if self.on_z_range_changed:
+            self.on_z_range_changed(self.z_min, self.z_max)
 
+    def update_clim(self, vmin: float, vmax: float) -> None:
+        """Update colour limits from external controls."""
+        if self._im is None:
+            return
+
+        # Prevent inverted ranges
+        if vmin >= vmax:
+            return
+
+        self._im.set_clim(vmin, vmax)
+        self.fig.canvas.draw_idle()
+
+    # ----------------------------------------------------------------------
+    # Existing probe drawing logic
+    # ----------------------------------------------------------------------
     def _draw_probe_points(self, mesh: MeshData) -> None:
         xg, yg = np.meshgrid(mesh.x_coords, mesh.y_coords)
         pts = np.column_stack([xg.ravel(), yg.ravel()])
@@ -109,11 +124,7 @@ class MeshVisualizer:
             zorder=2,
         )
 
-    def _draw_probe_overlay(
-        self,
-        cfg: Dict[str, Any],
-        regions: List[Region],
-    ) -> None:
+    def _draw_probe_overlay(self, cfg: Dict[str, Any], regions: List[Region]) -> None:
         try:
             min_x = float(cfg["mesh_min_x"])
             min_y = float(cfg["mesh_min_y"])
@@ -169,7 +180,6 @@ class MeshVisualizer:
                     alpha=0.9,
                 )
 
-            # Outline
             rect = Rectangle(
                 (min_x, min_y),
                 max_x - min_x,
@@ -183,5 +193,4 @@ class MeshVisualizer:
             self.ax.add_patch(rect)
 
         except Exception:
-            # Fail quietly if overlay config invalid
             pass

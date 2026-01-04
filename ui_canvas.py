@@ -70,8 +70,13 @@ class CanvasController:
             except Exception:
                 overlay = None
 
+        show_mesh_grid = self.app.settings_manager.show_mesh_grid.get()
         self.app.visualizer.draw_mesh(
-            self.app.mesh, self.app.regions, plot_bounds, overlay
+            self.app.mesh,
+            self.app.regions,
+            plot_bounds,
+            overlay,
+            show_mesh_grid=show_mesh_grid,
         )
         self.app.canvas.draw_idle()
 
@@ -110,8 +115,13 @@ class CanvasController:
                 overlay = None
 
         # Redraw mesh with new overlay settings while maintaining plot bounds
+        show_mesh_grid = self.app.settings_manager.show_mesh_grid.get()
         self.app.visualizer.draw_mesh(
-            self.app.mesh, self.app.regions, plot_bounds, overlay
+            self.app.mesh,
+            self.app.regions,
+            plot_bounds,
+            overlay,
+            show_mesh_grid=show_mesh_grid,
         )
         self.app.canvas.draw_idle()
 
@@ -204,7 +214,7 @@ class CanvasController:
 
         # Update listbox selection
         self.app.region_list.selection_clear(0, "end")
-        line_index = region_index * 3  # 3 lines per region (min, max, blank)
+        line_index = region_index * 2  # 2 lines per region (min, max)
         self.app.region_list.selection_set(line_index)
         self.app.region_list.see(line_index)
 
@@ -408,7 +418,13 @@ class CanvasController:
         region.patch.set_edgecolor("yellow")
         region.patch.set_linewidth(2.5)
 
-        # Don't refresh listbox during drag - only draw the canvas
+        # Update listbox with new coordinates during drag (skip overlay for performance)
+        self.app.region_manager._refresh_region_list(update_overlay=False)
+        if self._selected_region is not None:
+            line_index = self._selected_region * 2  # 2 lines per region (min, max)
+            self.app.region_list.selection_set(line_index)
+            self.app.region_list.see(line_index)
+
         self.app.canvas.draw()
 
     def _handle_resize(self, x: float, y: float) -> None:
@@ -443,10 +459,10 @@ class CanvasController:
         region.patch.set_width(max_x - min_x)
         region.patch.set_height(max_y - min_y)
 
-        # Update listbox and restore selection to maintain selection during resize
-        self.app.region_manager._refresh_region_list()
+        # Update listbox and restore selection during resize (skip overlay for performance)
+        self.app.region_manager._refresh_region_list(update_overlay=False)
         if self._selected_region is not None:
-            line_index = self._selected_region * 3  # 3 lines per region
+            line_index = self._selected_region * 2  # 2 lines per region (min, max)
             self.app.region_list.selection_set(line_index)
             self.app.region_list.see(line_index)
 
@@ -459,6 +475,8 @@ class CanvasController:
             self.app.region_manager._resize_region = None
             self.app.region_manager._resize_handle = None
             self.app.region_manager._resize_start = None
+            # Update probe overlay now that resize is complete
+            self.update_probe_overlay()
             self.app._set_status("Resize complete")
             return
 
@@ -476,7 +494,7 @@ class CanvasController:
                 region_being_dragged.patch.set_edgecolor("yellow")
                 region_being_dragged.patch.set_linewidth(2.5)
                 # Restore listbox selection
-                line_index = self._selected_region * 3  # 3 lines per region
+                line_index = self._selected_region * 2  # 2 lines per region (min, max)
                 self.app.region_list.selection_set(line_index)
                 self.app.region_list.see(line_index)
             self.app.canvas.draw()
